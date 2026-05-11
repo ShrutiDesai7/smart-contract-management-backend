@@ -1,0 +1,27 @@
+spring:
+  application:
+    name: contract-management
+  config:
+    import: optional:classpath:application-secrets.yaml
+  datasource:
+    url: jdbc:mysql://localhost:3306/contracts_db
+    username: root
+    password: root 
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+
+app:
+  upload-dir: uploads
+
+openai:
+  api-key: ${OPENAI_API_KEY:}
+  model: gpt-4o-mini
+  embedding-model: text-embedding-3-small
