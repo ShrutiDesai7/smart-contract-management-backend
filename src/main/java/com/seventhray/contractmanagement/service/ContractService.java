@@ -2,16 +2,19 @@ package com.seventhray.contractmanagement.service;
 
 import com.seventhray.contractmanagement.model.Contract;
 import com.seventhray.contractmanagement.model.ContractStatus;
+import com.seventhray.contractmanagement.repository.ContractChunkRepository;
 import com.seventhray.contractmanagement.repository.ContractRepository;
 import com.seventhray.contractmanagement.util.DocumentTextExtractor;
 import com.seventhray.contractmanagement.util.FileType;
 import com.seventhray.contractmanagement.util.FileTypeDetector;
 import com.seventhray.contractmanagement.util.LocalFileStorage;
-import com.seventhray.contractmanagement.util.SemanticSnippetRetriever;
 import com.seventhray.contractmanagement.util.StoredFile;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -21,27 +24,32 @@ import java.util.List;
 @Service
 public class ContractService {
 
+    private static final Logger log = LoggerFactory.getLogger(ContractService.class);
+
     private final ContractRepository contractRepository;
+    private final ContractChunkRepository contractChunkRepository;
     private final LocalFileStorage localFileStorage;
     private final FileTypeDetector fileTypeDetector;
     private final DocumentTextExtractor documentTextExtractor;
-    private final SemanticSnippetRetriever snippetRetriever;
-    private final OpenAiAnswersService openAiAnswersService;
+    private final ContractChunkIndexService contractChunkIndexService;
+    private final ContractQaService contractQaService;
 
     public ContractService(
             ContractRepository contractRepository,
+            ContractChunkRepository contractChunkRepository,
             LocalFileStorage localFileStorage,
             FileTypeDetector fileTypeDetector,
             DocumentTextExtractor documentTextExtractor,
-            SemanticSnippetRetriever snippetRetriever,
-            OpenAiAnswersService openAiAnswersService
+            ContractChunkIndexService contractChunkIndexService,
+            ContractQaService contractQaService
     ) {
         this.contractRepository = contractRepository;
+        this.contractChunkRepository = contractChunkRepository;
         this.localFileStorage = localFileStorage;
         this.fileTypeDetector = fileTypeDetector;
         this.documentTextExtractor = documentTextExtractor;
-        this.snippetRetriever = snippetRetriever;
-        this.openAiAnswersService = openAiAnswersService;
+        this.contractChunkIndexService = contractChunkIndexService;
+        this.contractQaService = contractQaService;
     }
 
     public Contract saveContract(Contract contract) {
@@ -130,7 +138,9 @@ public class ContractService {
         contract.setFilePath(stored.absolutePath().toString());
         contract.setExtractedText(extractedText);
 
-        return contractRepository.save(contract);
+        Contract saved = contractRepository.save(contract);
+        contractChunkIndexService.indexContract(saved);
+        return saved;
     }
 
     public List<Contract> listContractsNewestFirst() {
@@ -141,14 +151,27 @@ public class ContractService {
         return contractRepository.findAll(sort);
     }
 
-    public String findAnswerWithAi(Long id, String question) {
+    public ContractQaService.QaResult askContract(Long id, String question) {
         Contract contract = getContractById(id);
-        String extractedText = contract.getExtractedText();
-        if (extractedText == null || extractedText.isBlank()) {
-            return "Answer: Not found in contract";
+        if (contract.getExtractedText() != null && !contract.getExtractedText().isBlank()) {
+            long existingChunks = contractChunkRepository.countByContractId(id);
+            if (existingChunks > 0) {
+                return contractQaService.ask(id, question);
+            }
+            int indexed = contractChunkIndexService.indexContract(contract);
+            log.info("Auto-indexed contractId={} chunks={}", id, indexed);
         }
+        return contractQaService.ask(id, question);
+    }
 
-        var snippets = snippetRetriever.topSnippets(extractedText, question, 5);
-        return openAiAnswersService.answerFromSnippets(question, snippets);
+    @Transactional
+    public int reindexAllContracts() {
+        List<Contract> all = contractRepository.findAll();
+        int reindexed = 0;
+        for (Contract c : all) {
+            contractChunkIndexService.indexContract(c);
+            reindexed++;
+        }
+        return reindexed;
     }
 }

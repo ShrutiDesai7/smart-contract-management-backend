@@ -63,8 +63,15 @@ public class ContractController {
             @PathVariable Long id,
             @Valid @RequestBody AskQuestionRequest request
     ) {
-        String answer = contractService.findAnswerWithAi(id, request.getQuestion());
-        boolean matched = answer != null && !answer.equalsIgnoreCase("Answer: Not found in contract");
-        return new AskQuestionResponse(null, answer, matched);
+        var result = contractService.askContract(id, request.getQuestion());
+        return new AskQuestionResponse(result.answer(), result.evidence());
     }
+
+    @PostMapping("/reindex")
+    public ReindexResponse reindexAll() {
+        int reindexed = contractService.reindexAllContracts();
+        return new ReindexResponse(reindexed);
+    }
+
+    public record ReindexResponse(int contractsReindexed) {}
 }

@@ -1,25 +1,17 @@
 package com.seventhray.contractmanagement.dto;
 
+import java.util.List;
+
 public class AskQuestionResponse {
-    private String question;
     private String answer;
-    private boolean matched;
+    private List<String> evidence;
 
     public AskQuestionResponse() {
     }
 
-    public AskQuestionResponse(String question, String answer, boolean matched) {
-        this.question = question;
+    public AskQuestionResponse(String answer, List<String> evidence) {
         this.answer = answer;
-        this.matched = matched;
-    }
-
-    public String getQuestion() {
-        return question;
-    }
-
-    public void setQuestion(String question) {
-        this.question = question;
+        this.evidence = evidence;
     }
 
     public String getAnswer() {
@@ -30,12 +22,11 @@ public class AskQuestionResponse {
         this.answer = answer;
     }
 
-    public boolean isMatched() {
-        return matched;
+    public List<String> getEvidence() {
+        return evidence;
     }
 
-    public void setMatched(boolean matched) {
-        this.matched = matched;
+    public void setEvidence(List<String> evidence) {
+        this.evidence = evidence;
     }
 }
-
