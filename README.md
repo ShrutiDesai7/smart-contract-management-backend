@@ -27,6 +27,25 @@ A simple contract management system:
 - Local secrets (optional): `src/main/resources/application-secrets.yaml` (gitignored)
 - Frontend: `frontend/`
 
+## Screenshots
+
+### Upload Contract
+<img width="1686" height="421" alt="image" src="https://github.com/user-attachments/assets/559a7e6c-9c9d-4161-b8e2-003a2888e054" />
+
+<img width="760" height="571" alt="image" src="https://github.com/user-attachments/assets/25776988-7a31-4806-bd4c-551116ba502a" />
+
+---
+### Contract List
+<img width="703" height="717" alt="image" src="https://github.com/user-attachments/assets/dd2b82cf-5639-4702-871e-2e2539a036d7" />
+
+---
+### Ask Questions
+
+<img width="1247" height="450" alt="image" src="https://github.com/user-attachments/assets/c7d95dac-94a3-40b5-8f3c-ff7f2bdadf8c" />
+
+
+---
+
 ## Quick Start
 
 ### 1) Configure database (MySQL)
