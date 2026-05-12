@@ -147,7 +147,7 @@ export function ContractListCard(props: {
   }, [props.refreshKey])
 
   return (
-    <div className="overflow-hidden rounded-3xl border border-slate-200/70 bg-white/80 shadow-sm ring-1 ring-black/5">
+    <div className="overflow-hidden rounded-3xl border border-slate-200/70 bg-white/80 shadow-sm ring-1 ring-black/5 transition hover:shadow-md">
       <div className="bg-gradient-to-r from-sky-600/10 via-sky-600/5 to-transparent px-5 py-4">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="flex items-start gap-3">
@@ -313,4 +313,3 @@ export function ContractListCard(props: {
     </div>
   )
 }
-

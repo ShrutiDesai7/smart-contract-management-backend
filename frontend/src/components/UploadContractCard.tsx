@@ -48,7 +48,7 @@ export function UploadContractCard(props: {
   }
 
   return (
-    <div className="overflow-hidden rounded-3xl border border-slate-200/70 bg-white/80 shadow-sm ring-1 ring-black/5">
+    <div className="overflow-hidden rounded-3xl border border-slate-200/70 bg-white/80 shadow-sm ring-1 ring-black/5 transition hover:shadow-md">
       <div className="bg-gradient-to-r from-emerald-600/10 via-emerald-600/5 to-transparent px-5 py-4">
         <div className="flex items-start gap-3">
           <div className="mt-0.5 grid h-9 w-9 place-items-center rounded-2xl bg-white text-emerald-700 shadow-sm ring-1 ring-black/5">
@@ -76,9 +76,6 @@ export function UploadContractCard(props: {
           </div>
           <div>
             <h2 className="text-lg font-semibold text-slate-900">Upload Contract</h2>
-            <p className="mt-1 text-sm text-slate-600">
-              Upload a PDF/DOCX. The backend extracts text and saves metadata.
-            </p>
           </div>
         </div>
       </div>
@@ -140,4 +137,3 @@ export function UploadContractCard(props: {
     </div>
   )
 }
-

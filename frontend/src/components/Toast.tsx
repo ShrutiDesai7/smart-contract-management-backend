@@ -34,7 +34,7 @@ export function Toast(props: {
   return (
     <div
       className={[
-        'pointer-events-auto w-full max-w-sm rounded-2xl border px-4 py-3 shadow-lg',
+        'pointer-events-auto w-full max-w-sm rounded-2xl border px-4 py-3 shadow-lg backdrop-blur supports-[backdrop-filter]:bg-white/70 transition',
         toastClasses(props.toast.kind),
       ].join(' ')}
       role={props.toast.kind === 'error' ? 'alert' : 'status'}
@@ -50,7 +50,7 @@ export function Toast(props: {
         <button
           type="button"
           onClick={() => props.onClose(props.toast.id)}
-          className="rounded-lg px-2 py-1 text-xs font-semibold text-slate-700 hover:bg-black/5"
+          className="rounded-lg px-2 py-1 text-xs font-semibold text-slate-700 transition hover:bg-black/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-900/40"
           aria-label="Close"
         >
           Close
@@ -59,4 +59,3 @@ export function Toast(props: {
     </div>
   )
 }
-
