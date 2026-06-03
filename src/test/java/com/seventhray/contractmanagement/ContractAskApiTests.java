@@ -33,7 +33,7 @@ class ContractAskApiTests {
 
     @Test
     void askReturnsAnswer_andEvidence_whenKeywordsPresent() throws Exception {
-        long id = uploadDocx("Payment terms: Net 30 days.\nTermination notice: 15 days.");
+        String id = uploadDocx("Payment terms: Net 30 days.\nTermination notice: 15 days.");
 
         mockMvc.perform(post("/contracts/{id}/ask", id)
                         .contentType(APPLICATION_JSON)
@@ -46,7 +46,7 @@ class ContractAskApiTests {
 
     @Test
     void askPrefersRealSentence_overHeadingOnlyLine() throws Exception {
-        long id = uploadDocx("PAYMENT TERMS\nNet 30 days from invoice date.\nOther clause.");
+        String id = uploadDocx("PAYMENT TERMS\nNet 30 days from invoice date.\nOther clause.");
 
         mockMvc.perform(post("/contracts/{id}/ask", id)
                         .contentType(APPLICATION_JSON)
@@ -64,7 +64,7 @@ class ContractAskApiTests {
                 "working hours are 9 to 6 and leave policy includes 12 days annual leave " +
                 "this sentence continues without clear punctuation so extraction must stay short ".repeat(10);
 
-        long id = uploadDocx(longBlob);
+        String id = uploadDocx(longBlob);
 
         MvcResult res = mockMvc.perform(post("/contracts/{id}/ask", id)
                         .contentType(APPLICATION_JSON)
@@ -78,7 +78,7 @@ class ContractAskApiTests {
 
     @Test
     void askReturnsNotFound_whenNoRelevantAnswerFound() throws Exception {
-        long id = uploadDocx("This agreement covers confidentiality only.");
+        String id = uploadDocx("This agreement covers confidentiality only.");
 
         mockMvc.perform(post("/contracts/{id}/ask", id)
                         .contentType(APPLICATION_JSON)
@@ -91,7 +91,7 @@ class ContractAskApiTests {
 
     @Test
     void askReturns404_whenContractNotFound() throws Exception {
-        mockMvc.perform(post("/contracts/{id}/ask", 999999)
+        mockMvc.perform(post("/contracts/{id}/ask", "99999999-9999-9999-9999-999999999999")
                         .contentType(APPLICATION_JSON)
                         .content("{\"question\":\"Anything\"}"))
                 .andExpect(status().isNotFound());
@@ -105,7 +105,7 @@ class ContractAskApiTests {
                 .andExpect(status().isOk())
                 .andReturn();
 
-        long id = objectMapper.readTree(created.getResponse().getContentAsString()).path("id").asLong();
+        String id = objectMapper.readTree(created.getResponse().getContentAsString()).path("id").asText();
 
         mockMvc.perform(post("/contracts/{id}/ask", id)
                         .contentType(APPLICATION_JSON)
@@ -116,7 +116,7 @@ class ContractAskApiTests {
                 .andExpect(jsonPath("$.evidence.length()").value(0));
     }
 
-    private long uploadDocx(String text) throws Exception {
+    private String uploadDocx(String text) throws Exception {
         byte[] docxBytes = createDocx(text);
         MockMultipartFile file = new MockMultipartFile(
                 "file",
@@ -133,7 +133,7 @@ class ContractAskApiTests {
                 .andExpect(status().isOk())
                 .andReturn();
 
-        return objectMapper.readTree(upload.getResponse().getContentAsString()).path("id").asLong();
+        return objectMapper.readTree(upload.getResponse().getContentAsString()).path("id").asText();
     }
 
     private static byte[] createDocx(String text) throws Exception {

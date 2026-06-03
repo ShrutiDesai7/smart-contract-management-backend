@@ -8,7 +8,9 @@ spring:
     hibernate:
       ddl-auto: create-drop
     show-sql: false
+  sql:
+    init:
+      mode: never
 
 app:
   upload-dir: target/test-uploads
-

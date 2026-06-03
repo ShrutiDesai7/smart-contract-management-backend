@@ -56,16 +56,16 @@ class ContractUploadApiTests {
                                 .param("contractName", "NDA - ACME")
                 )
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").isNumber())
+                .andExpect(jsonPath("$.id").isString())
                 .andExpect(jsonPath("$.status").value("DRAFT"))
                 .andExpect(jsonPath("$.originalFileName").value("nda.docx"))
                 .andReturn();
 
-        long id = objectMapper.readTree(upload.getResponse().getContentAsString()).path("id").asLong();
+        String id = objectMapper.readTree(upload.getResponse().getContentAsString()).path("id").asText();
 
         MvcResult fetched = mockMvc.perform(get("/contracts/{id}", id))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value((int) id))
+                .andExpect(jsonPath("$.id").value(id))
                 .andExpect(jsonPath("$.contractName").value("NDA - ACME"))
                 .andExpect(jsonPath("$.status").value("DRAFT"))
                 .andExpect(jsonPath("$.originalFileName").value("nda.docx"))
@@ -93,12 +93,12 @@ class ContractUploadApiTests {
                                 .param("contractName", "PDF Contract")
                 )
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").isNumber())
+                .andExpect(jsonPath("$.id").isString())
                 .andExpect(jsonPath("$.status").value("DRAFT"))
                 .andExpect(jsonPath("$.originalFileName").value("contract.pdf"))
                 .andReturn();
 
-        long id = objectMapper.readTree(upload.getResponse().getContentAsString()).path("id").asLong();
+        String id = objectMapper.readTree(upload.getResponse().getContentAsString()).path("id").asText();
 
         MvcResult fetched = mockMvc.perform(get("/contracts/{id}", id))
                 .andExpect(status().isOk())

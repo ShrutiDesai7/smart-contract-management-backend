@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.UUID;
 
 @Service
 public class ContractQaService {
@@ -30,7 +31,7 @@ public class ContractQaService {
         this.contractChunkRepository = contractChunkRepository;
     }
 
-    public QaResult ask(Long contractId, String question) {
+    public QaResult ask(UUID contractId, String question) {
         if (contractId == null) return new QaResult("Not found in contract", List.of());
         if (question == null || question.isBlank()) return new QaResult("Not found in contract", List.of());
 

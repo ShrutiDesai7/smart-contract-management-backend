@@ -5,16 +5,22 @@ import com.seventhray.contractmanagement.dto.ContractUploadResponse;
 import com.seventhray.contractmanagement.dto.AskQuestionRequest;
 import com.seventhray.contractmanagement.dto.AskQuestionResponse;
 import com.seventhray.contractmanagement.dto.UpdateContractStatusRequest;
+import com.seventhray.contractmanagement.dto.PagedResponse;
+import com.seventhray.contractmanagement.dto.WorkflowHistoryResponse;
 import com.seventhray.contractmanagement.model.Contract;
+import com.seventhray.contractmanagement.model.ContractStatus;
 import com.seventhray.contractmanagement.service.ContractService;
 import jakarta.validation.Valid;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.UUID;
 
 @RestController
-@RequestMapping("/contracts")
+@RequestMapping("/api/contracts")
 public class ContractController {
 
     private final ContractService contractService;
@@ -28,22 +34,42 @@ public class ContractController {
         return contractService.saveContract(contract);
     }
 
+    @GetMapping
+    public PagedResponse<ContractListItemResponse> listContracts(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) ContractStatus status
+    ) {
+        int safePage = Math.max(page, 0);
+        int safeSize = Math.min(Math.max(size, 1), 100);
+        var pageable = PageRequest.of(
+                safePage,
+                safeSize,
+                Sort.by(Sort.Order.desc("createdAt"), Sort.Order.desc("id"))
+        );
+
+        var result = contractService.searchContracts(search, status, pageable)
+                .map(ContractListItemResponse::from);
+        return PagedResponse.from(result);
+    }
+
     @GetMapping("/{id}")
-    public Contract getContractById(@PathVariable Long id) {
+    public Contract getContractById(@PathVariable UUID id) {
         return contractService.getContractById(id);
     }
 
-    @GetMapping
-    public List<ContractListItemResponse> listContracts() {
-        return contractService.listContractsNewestFirst()
+    @GetMapping("/{id}/history")
+    public List<WorkflowHistoryResponse> getWorkflowHistory(@PathVariable UUID id) {
+        return contractService.getWorkflowHistory(id)
                 .stream()
-                .map(ContractListItemResponse::from)
+                .map(WorkflowHistoryResponse::from)
                 .toList();
     }
 
     @PutMapping("/{id}/status")
     public Contract updateContractStatus(
-            @PathVariable Long id,
+            @PathVariable UUID id,
             @Valid @RequestBody UpdateContractStatusRequest request
     ) {
         return contractService.updateContractStatus(id, request.getStatus());
@@ -60,7 +86,7 @@ public class ContractController {
 
     @PostMapping("/{id}/ask")
     public AskQuestionResponse askQuestion(
-            @PathVariable Long id,
+            @PathVariable UUID id,
             @Valid @RequestBody AskQuestionRequest request
     ) {
         var result = contractService.askContract(id, request.getQuestion());

@@ -2,6 +2,9 @@ package com.seventhray.contractmanagement.repository;
 
 import com.seventhray.contractmanagement.model.Contract;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
-public interface ContractRepository extends JpaRepository<Contract, Long> {
+import java.util.UUID;
+
+public interface ContractRepository extends JpaRepository<Contract, UUID>, JpaSpecificationExecutor<Contract> {
 }

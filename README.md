@@ -1,105 +1,202 @@
-# Contract Management (Spring Boot + React)
+# Contract Management (Spring Boot + Next.js + PostgreSQL)
 
-A simple contract management system:
+A contract management system with intelligent Q&A capabilities.
 
-- Upload a contract (PDF/DOCX)
+## Features
+
+- Upload contracts (PDF/DOCX)
 - Store file + extracted text
 - Update status: `DRAFT -> REVIEW -> APPROVED`
-- Ask questions about the contract (offline, evidence-backed)
+- Ask questions about contracts (offline/offline-first, evidence-backed)
+- Track workflow history
 
 ## Tech Stack
 
-- Backend: Java 17, Spring Boot, Spring Web, Spring Data JPA
-- Parsing: PDFBox (PDF), Apache POI (DOCX)
-- DB: MySQL (dev), H2 (tests)
-- Frontend: React + TypeScript + Vite + Tailwind
+- **Backend**: Java 17, Spring Boot, Spring Web, Spring Data JPA
+- **Parsing**: PDFBox (PDF), Apache POI (DOCX)
+- **Database**: PostgreSQL (local dev), H2 (tests)
+- **Frontend**: Next.js (recommended), lives in `frontend-next/`
 
-## Prerequisites
+## Assumptions (during development)
+
+- PostgreSQL is installed and running locally.
+- The PostgreSQL credentials in `src/main/resources/application.yaml` match your local setup (password default commonly set to `root`).
+- Schema/data are expected to be created on first backend startup (and/or via the provided SQL scripts).
+- Q&A is **offline/offline-first**: contract text is chunked and indexed locally; answers are composed from retrieved chunks.
+- Frontend talks to the backend through normal HTTP calls (dev proxy behavior depends on the Next.js setup).
+
+---
+
+## Setup Instructions
+
+### 1) Prerequisites
 
 - Java 17+
-- Node.js 18+ (or 20+)
-- MySQL 8+ (for local dev) OR update the datasource config to your DB of choice
+- Node.js 18+ (20+ recommended)
+- PostgreSQL 12+ (for local dev)
+- Maven (via the included `./mvnw` wrapper)
 
-## Project Structure
+### 2) Configure database
 
-- Backend code: `src/main/java/com/seventhray/contractmanagement`
-- Backend config: `src/main/resources/application.yaml`
-- Local secrets (optional): `src/main/resources/application-secrets.yaml` (gitignored)
-- Frontend: `frontend/`
+1. Ensure PostgreSQL is running.
+2. Create the database:
 
-## Quick Start
+```powershell
+psql -U postgres
+```
 
-### 1) Configure database (MySQL)
+Then:
 
-Default config is in `src/main/resources/application.yaml`:
+```sql
+CREATE DATABASE contract_management;
+```
 
-- `spring.datasource.url=jdbc:mysql://localhost:3306/contracts_db`
-- `spring.datasource.username=root`
-- `spring.datasource.password=root`
+Or run the provided script:
 
-Adjust as needed.
+```powershell
+psql -U postgres -f setup-database.sql
+```
 
-### 2) Start backend
+3. Verify the connection settings in:
+
+- `src/main/resources/application.yaml`
+
+Example expected values:
+
+```yaml
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/contract_management
+    username: postgres
+    password: root
+```
+
+If your password is different, update it.
+
+---
+
+## How to Run the Backend
+
+1. From the project root:
 
 ```powershell
 ./mvnw spring-boot:run
 ```
 
-Backend runs on `http://localhost:8080`.
+2. Backend runs on:
 
-### 3) Start frontend
+- `http://localhost:8080`
+
+Notes:
+- On first run, Spring may create and populate tables using `schema.sql` / `data.sql` depending on your configuration.
+
+### Q&A configuration / API key
+
+If your environment requires the OpenAI-backed flow, configure `OPENAI_API_KEY`.
+
+- `src/main/resources/HELP.md` documents how to set it via environment variables.
+
+(If `OPENAI_API_KEY` is not configured, the backend may return an error when the OpenAI-backed path is required.)
+
+---
+
+## How to Run the Frontend
+
+This project includes a Next.js frontend in `frontend-next/`.
+
+1. Install dependencies and start dev server:
 
 ```powershell
-cd frontend
+cd frontend-next
 npm install
 npm run dev
 ```
 
-Frontend runs on the Vite dev server and proxies `http://localhost:5173/api/*` to `http://localhost:8080/*` (see `frontend/vite.config.ts`).
+2. Frontend runs on:
 
-## Main APIs
+- `http://localhost:3000`
 
-Note: the frontend calls these endpoints via the `/api` proxy in dev, but the backend routes themselves do not include `/api`.
+---
 
-- Upload: `POST /contracts/upload` (multipart: `contractName`, `file`)
-- List: `GET /contracts`
-- Fetch by id: `GET /contracts/{id}`
-- Update status: `PUT /contracts/{id}/status` (JSON: `{ "status": "REVIEW" }`)
-- Ask: `POST /contracts/{id}/ask` (JSON: `{ "question": "..." }`)
-- Reindex all contracts: `POST /contracts/reindex`
+## API Endpoints (quick reference)
+
+Base path: `/api/contracts`
+
+- **Upload**: `POST /api/contracts/upload` (multipart form: `contractName`, `file`)
+- **List**: `GET /api/contracts`
+- **Fetch by id**: `GET /api/contracts/{id}`
+- **Update status**: `PUT /api/contracts/{id}/status` with JSON `{ "status": "REVIEW" }`
+- **Ask**: `POST /api/contracts/{id}/ask` with JSON `{ "question": "..." }`
+- **Reindex all**: `POST /api/contracts/reindex`
+
+
+---
+
+## How to Execute Tests
+
+From the project root:
+
+```powershell
+./mvnw test
+```
+
+---
+
+## Troubleshooting
+
+### Internal Server Error when loading contracts
+
+1. Confirm PostgreSQL is running:
+
+```powershell
+psql -U postgres -c "SELECT version();"
+```
+
+2. Confirm the DB exists:
+
+```powershell
+psql -U postgres -c "\l" | findstr contract_management
+```
+
+3. Confirm tables exist:
+
+```powershell
+psql -U postgres -d contract_management -c "\dt"
+```
+
+4. Check backend logs.
+
+5. Recreate the database (if needed):
+
+```powershell
+psql -U postgres -c "DROP DATABASE IF EXISTS contract_management;"
+psql -U postgres -f setup-database.sql
+./mvnw spring-boot:run
+```
+
+### Upload fails with 413 / size errors
+
+Adjust:
+
+- `spring.servlet.multipart.max-file-size`
+- `spring.servlet.multipart.max-request-size`
+
+in `src/main/resources/application.yaml`.
+
+---
 
 ## Example curl
 
 Upload:
 
 ```bash
-curl -F "contractName=My NDA" -F "file=@/path/to/file.pdf" http://localhost:8080/contracts/upload
+curl -F "contractName=My NDA" -F "file=@/path/to/file.pdf" http://localhost:8080/api/contracts/upload
 ```
 
 Ask:
 
 ```bash
-curl -H "Content-Type: application/json" -d "{\"question\":\"What are the payment terms?\"}" http://localhost:8080/contracts/1/ask
+curl -H "Content-Type: application/json" -d "{\"question\":\"What are the payment terms?\"}" http://localhost:8080/api/contracts/1/ask
 ```
 
-## Notes
-
-- Q&A is offline (no LLM calls required for the default flow):
-  - Contracts are chunked (~500–1000 chars) and indexed into `contract_chunk`.
-  - Retrieval uses local hashed TF‑IDF embeddings + cosine similarity (top 3 chunks).
-  - Answers are composed from the retrieved chunks.
-- Response shape for `POST /contracts/{id}/ask`:
-  - `{ "answer": "...", "evidence": ["chunk1", "chunk2", "chunk3"] }`
-- `OPENAI_API_KEY` config exists in `src/main/resources/application.yaml`, but the current Q&A implementation is local/offline (see `src/main/java/com/seventhray/contractmanagement/service/ContractQaService.java`).
-
-## Troubleshooting
-
-- Upload fails with 413 / size errors: adjust `spring.servlet.multipart.max-file-size` and `spring.servlet.multipart.max-request-size` in `src/main/resources/application.yaml`.
-- MySQL connection errors: verify MySQL is running and the DB `contracts_db` exists (or update `spring.datasource.url`).
-
-## Tests
-
-```powershell
-./mvnw test
-```
 

@@ -4,9 +4,10 @@ import com.seventhray.contractmanagement.model.Contract;
 import com.seventhray.contractmanagement.model.ContractStatus;
 
 import java.time.Instant;
+import java.util.UUID;
 
 public class ContractUploadResponse {
-    private Long id;
+    private UUID id;
     private String contractName;
     private ContractStatus status;
     private String originalFileName;
@@ -28,11 +29,11 @@ public class ContractUploadResponse {
         return r;
     }
 
-    public Long getId() {
+    public UUID getId() {
         return id;
     }
 
-    public void setId(Long id) {
+    public void setId(UUID id) {
         this.id = id;
     }
 
@@ -92,4 +93,3 @@ public class ContractUploadResponse {
         this.uploadedAt = uploadedAt;
     }
 }
-
