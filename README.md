@@ -75,7 +75,9 @@ If your password is different, update it.
 
 ---
 
-## How to Run the Backend
+## Quick Start
+
+### How to Run the Backend
 
 1. From the project root:
 
@@ -128,7 +130,6 @@ Base path: `/api/contracts`
 - **Update status**: `PUT /api/contracts/{id}/status` with JSON `{ "status": "REVIEW" }`
 - **Ask**: `POST /api/contracts/{id}/ask` with JSON `{ "question": "..." }`
 - **Reindex all**: `POST /api/contracts/reindex`
-
 
 ---
 
@@ -198,5 +199,4 @@ Ask:
 ```bash
 curl -H "Content-Type: application/json" -d "{\"question\":\"What are the payment terms?\"}" http://localhost:8080/api/contracts/1/ask
 ```
-
 
