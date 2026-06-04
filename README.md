@@ -1,148 +1,69 @@
-# Contract Management System (Spring Boot + Next.js + PostgreSQL)
+# Contract Management System
 
-SaaS-style contract management with **searchable contract dashboards** and **workflow history**. Assessment APIs are exposed under **`/api/contracts`**.
-
-> Note: the evaluation module in this repository primarily focuses on listing/searching contracts and viewing workflow history. The Q&A endpoints are also available in the same `/api/contracts` namespace and are described for completeness.
-
-
-> Backward compatibility: legacy upload/Q&A endpoints are preserved; evaluation/assessment APIs are organized under `/api/contracts`.
-
----
-
-## Project Overview
-
-This system helps businesses manage:
-
-- Contract documents (upload + metadata)
-- Contract lifecycle status: `DRAFT → REVIEW → APPROVED`
-- Workflow/audit trail (status change history)
-- Contract discovery (pagination + search + filters)
-- Retrieval-based Q&A using chunking
-- (Legacy) Q&A endpoints are preserved for backward compatibility
-
-
----
-
-
-
-
----
-
-## Features
-
-- **Upload contracts** (PDF/DOCX) via `POST /api/contracts/upload`
-- **Extract text** and build **chunked retrieval indexes**
-- **Retrieval-based Q&A using chunking** via `POST /api/contracts/{id}/ask`
-  - Returns `answer` plus **retrieved evidence snippets**
-- **Workflow history**
-  - Update status: `PUT /api/contracts/{id}/status`
-  - View audit trail: `GET /api/contracts/{id}/history`
-- **Contract search** (interview-ready evaluation API)
-  - Pagination, title search, owner search, status filtering
-
----
+SaaS-style contract management module built with **Next.js**, **Java Spring Boot**, and **PostgreSQL**. It lets users view, search, filter, paginate, upload, and inspect contracts with workflow history.
 
 ## Tech Stack
 
-- **Frontend**: Next.js + TypeScript (submission in `frontend-next/`)
-- **Backend**: Java 17 + Spring Boot (Spring Web, Spring Data JPA)
-- **Database**: PostgreSQL (H2 in tests)
-- **Document parsing**: PDFBox (PDF), Apache POI (DOCX)
+- **Frontend**: Next.js + TypeScript (`frontend-next/`)
+- **Backend**: Java 17 + Spring Boot
+- **Database**: PostgreSQL
+- **Tests**: JUnit/MockMvc for backend, Vitest + Testing Library for frontend
 
----
+## Features
 
-## System Architecture
-
-### Backend flow: upload → storage → chunking → Q&A → workflow history
-
-1. **Upload**
-   - `POST /api/contracts/upload`
-   - Creates a contract record and stores the uploaded file
-
-2. **Storage**
-   - Uploaded files are stored in the backend upload directory (`app.upload-dir`, default `uploads/`).
-   - Durable processing artifacts (e.g., extracted text/chunks as defined in the data model) are persisted in **PostgreSQL**.
-
-3. **Chunking + indexing**
-   - Extracted contract text is split into chunks.
-   - Chunks are encoded/indexed to support **retrieval-based Q&A using chunking**.
-
-4. **Retrieval-based Q&A**
-   - `POST /api/contracts/{id}/ask`
-   - The backend retrieves relevant chunks for the question.
-   - The response includes the composed `answer` and **evidence snippets**.
-
-5. **Workflow history**
-   - `PUT /api/contracts/{id}/status` updates the contract status.
-   - Each transition is recorded in `workflow_history` and exposed via `GET /api/contracts/{id}/history`.
-
-### PostgreSQL: persistent storage role
-
-PostgreSQL stores the durable state required for a production-like workflow:
-
-- `contracts` (contract metadata, status, timestamps)
-- `workflow_history` (audit trail of status transitions)
-- `contract_chunk` (chunked artifacts needed for retrieval-based Q&A)
-
-This design ensures that contract lists/details/history are available after restarts without recomputing the entire pipeline.
-
-### Frontend → backend API communication
-
-Next.js calls backend REST endpoints directly over HTTP under **`/api/contracts`**.
-
-- Dashboard fetches:
-  - `GET /api/contracts` (supports pagination, search, and status filter)
-- Details page fetches:
+- Contracts dashboard
+  - Contract title
+  - Owner
+  - Status
+  - Created date
+  - Search box
+  - Status filter
+  - Pagination
+  - Loading, error, and empty states
+- Contract details page
+  - Contract metadata
+  - Workflow history
+- REST APIs
+  - `GET /api/contracts`
   - `GET /api/contracts/{id}`
   - `GET /api/contracts/{id}/history`
+- PostgreSQL database schema
+  - `contracts`
+  - `workflow_history`
+  - `contract_chunk`
+  - Primary keys, foreign keys, and indexes
+- Optional upload and Q&A support
+  - `POST /api/contracts/upload`
+  - `POST /api/contracts/{id}/ask`
 
----
+Legacy `/contracts` endpoints are also supported for backward compatibility, but the assessment/frontend APIs use `/api/contracts`.
 
-## Assumptions & Design Decisions
-
-- **Assessment/evaluation APIs are separated under `/api/contracts`.**
-- **Terminology correctness**: Q&A is **retrieval-based Q&A using chunking** (not “offline/offline-first”).
-- **Backward compatibility**: legacy upload/Q&A endpoints are preserved.
-- **No hard-coded credential assumptions** for evaluation.
-  - Database connection is configured via `DATABASE_URL`, `DATABASE_USERNAME`, `DATABASE_PASSWORD` (see Setup).
-
----
-
-## Setup Instructions (Step-by-step)
-
-### 1) Prerequisites
+## Prerequisites
 
 - Java 17+
-- Node.js 18+ (20+ recommended)
+- Node.js 18+ or 20+
 - PostgreSQL 12+
-- Maven (use wrapper: `./mvnw`)
+- PowerShell on Windows
 
-### 2) Configure PostgreSQL
+## PostgreSQL Setup
 
-1. Ensure PostgreSQL is running.
-2. Create the database `contract_management`.
+Start PostgreSQL first. Then run the setup script from the project root.
 
-Option A: interactive
-
-```powershell
-psql -U postgres
-```
-
-Then:
-
-```sql
-CREATE DATABASE contract_management;
-```
-
-Option B: run the script
+If `psql` works from PowerShell:
 
 ```powershell
 psql -U postgres -f setup-database.sql
 ```
 
-3. Verify datasource settings in `src/main/resources/application.yaml`.
+If `psql` is not recognized, use the full PostgreSQL path:
 
-The app uses environment-variable overrides:
+```powershell
+& "C:\Program Files\PostgreSQL\16\bin\psql.exe" -U postgres -f setup-database.sql
+```
+
+The script creates the `contract_management` database and required tables. If you see messages like `already exists` or `relation already exists, skipping`, that is fine.
+
+The backend uses these defaults from `src/main/resources/application.yaml`:
 
 ```yaml
 spring:
@@ -152,34 +73,29 @@ spring:
     password: ${DATABASE_PASSWORD:root}
 ```
 
-> For assessment/release: set `DATABASE_PASSWORD` to your local PostgreSQL password. Do not rely on any specific default.
-
-### 3) (Optional) OpenAI API key for Q&A (if enabled)
-
-The backend reads `OPENAI_API_KEY`.
-
-- See `HELP.md` for environment variable examples.
-- If the OpenAI-backed path is triggered without configuration, the backend returns a clear configuration error.
-
----
-
-## How to Run Backend
-
-1. From the project root:
+If your PostgreSQL password is not `root`, set `DATABASE_PASSWORD` before running the backend:
 
 ```powershell
-./mvnw spring-boot:run
+$env:DATABASE_PASSWORD="your_postgres_password"
 ```
 
-2. Backend runs on:
+## Run Backend
 
-- `http://localhost:8080`
+From the project root:
 
----
+```powershell
+.\mvnw.cmd spring-boot:run
+```
 
-## How to Run Frontend (Next.js only for submission)
+Backend runs at:
 
-1. Start Next.js:
+```text
+http://localhost:8080
+```
+
+## Run Frontend
+
+Open a second terminal:
 
 ```powershell
 cd frontend-next
@@ -187,54 +103,65 @@ npm install
 npm run dev
 ```
 
-2. Frontend runs on:
+Frontend runs at:
 
-- `http://localhost:3000`
+```text
+http://localhost:3000
+```
 
----
+Open `http://localhost:3000` in your browser.
 
-## API Reference (`/api/contracts` endpoints)
+## API Reference
 
-All assessment endpoints are organized under **`/api/contracts`**.
+### List Contracts
 
-### 1) List Contracts
-
-- `GET /api/contracts`
+```http
+GET /api/contracts
+```
 
 Supports:
 
-- Pagination: `page`, `size`
-- Search: `search` (matches title and owner)
-- Filter: `status`
+- `page`
+- `size`
+- `search`
+- `status`
 
 Examples:
 
 ```text
-GET /api/contracts?page=1&size=10
+GET /api/contracts?page=0&size=10
 GET /api/contracts?status=REVIEW
 GET /api/contracts?search=vendor
 ```
 
-### 2) Get Contract Details
+### Get Contract Details
 
-- `GET /api/contracts/{id}`
+```http
+GET /api/contracts/{id}
+```
 
-Returns complete contract details.
+### Get Workflow History
 
-### 3) Get Workflow History
+```http
+GET /api/contracts/{id}/history
+```
 
-- `GET /api/contracts/{id}/history`
+### Upload Contract
 
-Returns workflow history for the contract.
+```http
+POST /api/contracts/upload
+```
 
-### 4) Retrieval-based Q&A using chunking (legacy/optional)
+Multipart fields:
 
-- `POST /api/contracts/upload`
-- `POST /api/contracts/{id}/ask`
+- `contractName`
+- `file`
 
-### 5) Update Contract Status
+### Update Contract Status
 
-- `PUT /api/contracts/{id}/status`
+```http
+PUT /api/contracts/{id}/status
+```
 
 Body:
 
@@ -242,83 +169,105 @@ Body:
 { "status": "REVIEW" }
 ```
 
-### 6) Reindex all contracts
+Valid status flow:
 
-- `POST /api/contracts/reindex`
+```text
+DRAFT -> REVIEW -> APPROVED
+```
 
----
-
-## Testing Instructions
+## Testing
 
 ### Backend
 
+From the project root:
+
 ```powershell
-./mvnw test
+.\mvnw.cmd test
+```
+
+Expected result:
+
+```text
+BUILD SUCCESS
 ```
 
 ### Frontend
 
-Run Next.js tests/lint (if configured in your environment):
+From `frontend-next/`:
 
 ```powershell
-cd frontend-next
 npm test
-```
-
-If `npm test` is not configured in this repository, run:
-
-```powershell
 npm run lint
+npm run build
 ```
 
----
+## Database Troubleshooting
 
-## Troubleshooting
+### `psql` is not recognized
 
-### Internal Server Error when loading contracts
-
-Checklist:
-
-1. Confirm PostgreSQL is running.
-2. Confirm the database exists: `contract_management`.
-3. Confirm required tables exist.
-
-Verify tables:
+Use the full path:
 
 ```powershell
-psql -U postgres -d contract_management -c "\dt"
+& "C:\Program Files\PostgreSQL\16\bin\psql.exe" -U postgres -d contract_management
 ```
 
-If tables are missing:
+Or add this folder to Windows PATH:
+
+```text
+C:\Program Files\PostgreSQL\16\bin
+```
+
+### Old schema causes UUID/BIGINT errors
+
+If you see errors like:
+
+```text
+operator does not exist: uuid = bigint
+```
+
+your existing PostgreSQL tables were created with older column types. Recreate the affected tables:
 
 ```powershell
-psql -U postgres -f setup-database.sql
-./mvnw spring-boot:run
+& "C:\Program Files\PostgreSQL\16\bin\psql.exe" -U postgres -d contract_management -c "DROP TABLE IF EXISTS contract_chunk;"
+& "C:\Program Files\PostgreSQL\16\bin\psql.exe" -U postgres -d contract_management -c "DROP TABLE IF EXISTS workflow_history;"
+& "C:\Program Files\PostgreSQL\16\bin\psql.exe" -U postgres -f setup-database.sql
 ```
 
-### Upload fails with 413 / size errors
+Verify column types:
 
-Adjust multipart limits in `src/main/resources/application.yaml`:
+```powershell
+& "C:\Program Files\PostgreSQL\16\bin\psql.exe" -U postgres -d contract_management -c "SELECT table_name, column_name, data_type FROM information_schema.columns WHERE table_name IN ('contracts', 'workflow_history', 'contract_chunk') ORDER BY table_name, ordinal_position;"
+```
 
-- `spring.servlet.multipart.max-file-size`
-- `spring.servlet.multipart.max-request-size`
+Important expected types:
 
----
+```text
+contracts.id                  uuid
+workflow_history.id           uuid
+workflow_history.contract_id  uuid
+contract_chunk.contract_id    uuid
+contract_chunk.embedding      bytea
+```
 
-## Limitations / Future Improvements
+### Upload fails with size errors
 
-- Retrieval quality improvements:
-  - tune chunk size/overlap
-  - add reranking
-- Async chunking/indexing for large documents
-- Observability improvements:
-  - structured logs, correlation ids
-  - metrics dashboards
-- Security hardening:
-  - authentication/authorization and RBAC
-  - stricter file validation and scanning
+Adjust these values in `src/main/resources/application.yaml`:
 
----
+```yaml
+spring:
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+```
 
-*End of README.*
+## Assumptions Made During Development
 
+- PostgreSQL is available locally and the database is named `contract_management`.
+- Database setup is performed manually using `setup-database.sql`.
+- The backend uses environment variables for database overrides: `DATABASE_URL`, `DATABASE_USERNAME`, and `DATABASE_PASSWORD`.
+- The frontend communicates with the backend through `/api/contracts`; Next.js rewrites proxy these requests to the Spring Boot backend.
+- Valid contract statuses are `DRAFT`, `REVIEW`, and `APPROVED`.
+- Valid workflow transition order is `DRAFT -> REVIEW -> APPROVED`.
+- Authentication and authorization are outside the scope of this module.
+- Uploaded files are stored locally in the `uploads/` directory.

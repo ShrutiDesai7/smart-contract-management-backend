@@ -20,7 +20,7 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/contracts")
+@RequestMapping({"/api/contracts", "/contracts"})
 public class ContractController {
 
     private final ContractService contractService;

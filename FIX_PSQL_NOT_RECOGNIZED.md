@@ -35,7 +35,7 @@ Once you find it (e.g., `C:\Program Files\PostgreSQL\16\bin`), run:
 
 ---
 
-## Solution 2: Add PostgreSQL to System PATH (Permanent Fix)
+## Solution 2: Add PostgreSQL to System PATH (Permanent Fix)& "C:\Program Files\PostgreSQL\16\bin\psql.exe" -U postgres -f setup-database.sql
 
 **Step 1: Find PostgreSQL bin folder**
 ```powershell

@@ -35,7 +35,7 @@ public class ContractChunk {
     @Column(nullable = false)
     private String chunkText;
 
-    @Lob
-    @Column(nullable = false)
+    @JdbcTypeCode(Types.BINARY)
+    @Column(nullable = false, columnDefinition = "BYTEA")
     private byte[] embedding;
 }
