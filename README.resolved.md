@@ -15,12 +15,12 @@ A contract management system with intelligent Q&A capabilities.
 - **Backend**: Java 17, Spring Boot, Spring Web, Spring Data JPA
 - **Parsing**: PDFBox (PDF), Apache POI (DOCX)
 - **Database**: PostgreSQL (local dev), H2 (tests)
-- **Frontend**: Next.js (recommended), lives in `frontend-next/`
+- **Frontend**: Next.js (recommended), lives in `frontend/`
 
 ## Assumptions (during development)
 
 - PostgreSQL is installed and running locally.
-- The PostgreSQL credentials in `src/main/resources/application.yaml` match your local setup (password default commonly set to `root`).
+- The PostgreSQL credentials in `backend/src/main/resources/application.yaml` match your local setup (password default commonly set to `root`).
 - Schema/data are expected to be created on first backend startup (and/or via the provided SQL scripts).
 - Q&A is **offline/offline-first**: contract text is chunked and indexed locally; answers are composed from retrieved chunks.
 - Frontend talks to the backend through normal HTTP calls (dev proxy behavior depends on the Next.js setup).
@@ -82,6 +82,7 @@ If your password is different, update it.
 1. From the project root:
 
 ```powershell
+cd backend
 ./mvnw spring-boot:run
 ```
 
@@ -104,12 +105,12 @@ If your environment requires the OpenAI-backed flow, configure `OPENAI_API_KEY`.
 
 ## How to Run the Frontend
 
-This project includes a Next.js frontend in `frontend-next/`.
+This project includes a Next.js frontend in `frontend/`.
 
 1. Install dependencies and start dev server:
 
 ```powershell
-cd frontend-next
+cd frontend
 npm install
 npm run dev
 ```
@@ -140,6 +141,12 @@ From the project root:
 ```powershell
 ./mvnw test
 ```
+backend testing :
+```powershell
+cd backend
+.\mvnw.cmd test
+```
+
 
 ---
 
