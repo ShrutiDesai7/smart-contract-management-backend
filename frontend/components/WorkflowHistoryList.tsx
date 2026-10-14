@@ -25,6 +25,7 @@ export function WorkflowHistoryList({ history }: WorkflowHistoryListProps) {
           <div className="muted">
             Changed by {item.changedBy || 'system'} on {formatDateTime(item.changedAt)}
           </div>
+          {item.comment ? <div className="history-comment">{item.comment}</div> : null}
         </div>
       ))}
     </div>

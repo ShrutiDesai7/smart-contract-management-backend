@@ -1,0 +1,24 @@
+psql - & "C:\Program Files\PostgreSQL\16\bin\psql.exe" -U postgres -f setup-database.sql
+contract_management database already exists
+contracts table exists
+workflow_history table exists
+contract_chunk table exists
+Required indexes exist
+
+-> in command line
+Server:   localhost
+Database: postgres
+Port:     5432
+Username: postgres
+Password: your PostgreSQL password
+
+backend - cd backend-python
+py -m venv .venv
+.\.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+Copy-Item .env.example .env
+uvicorn app.main:app --reload --port 8080
+
+
+frontend - cd "C:\Users\shruti\Desktop\c1\smart-contract-management-backend\frontend"
+>> npm run dev

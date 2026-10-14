@@ -1,13 +1,13 @@
 # Contract Management System
 
-SaaS-style contract management module built with **Next.js**, **Java Spring Boot**, and **PostgreSQL**. It lets users view, search, filter, paginate, upload, and inspect contracts with workflow history.
+SaaS-style contract management module built with **Next.js**, **Python FastAPI**, and **PostgreSQL**. It lets users view, search, filter, paginate, upload, and inspect contracts with workflow history.
 
 ## Tech Stack
 
-- **Frontend**: Next.js + TypeScript (`frontend-next/`)
-- **Backend**: Java 17 + Spring Boot
+- **Frontend**: Next.js + TypeScript (`frontend/`)
+- **Backend**: Python 3.11+ + FastAPI (`backend-python/`)
 - **Database**: PostgreSQL
-- **Tests**: JUnit/MockMvc for backend, Vitest + Testing Library for frontend
+- **Tests**: pytest/httpx for backend, Vitest + Testing Library for frontend
 
 ## Features
 
@@ -35,12 +35,19 @@ SaaS-style contract management module built with **Next.js**, **Java Spring Boot
 - Optional upload and Q&A support
   - `POST /api/contracts/upload`
   - `POST /api/contracts/{id}/ask`
+- LLM-ready reports
+  - `GET /api/contracts/{id}/report`
+  - `POST /api/contracts/{id}/report/regenerate`
+- Authenticated user/admin workflow
+  - Users can access their own contracts
+  - Admins can review all contracts
+  - Admins can approve, reject, or request changes
 
 Legacy `/contracts` endpoints are also supported for backward compatibility, but the assessment/frontend APIs use `/api/contracts`.
 
 ## Prerequisites
 
-- Java 17+
+- Python 3.11+
 - Node.js 18+ or 20+
 - PostgreSQL 12+
 - PowerShell on Windows
@@ -63,14 +70,10 @@ If `psql` is not recognized, use the full PostgreSQL path:
 
 The script creates the `contract_management` database and required tables. If you see messages like `already exists` or `relation already exists, skipping`, that is fine.
 
-The backend uses these defaults from `src/main/resources/application.yaml`:
+The Python backend uses these defaults from `backend-python/.env.example`:
 
 ```yaml
-spring:
-  datasource:
-    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/contract_management}
-    username: ${DATABASE_USERNAME:postgres}
-    password: ${DATABASE_PASSWORD:root}
+DATABASE_URL=postgresql://postgres:root@localhost:5432/contract_management
 ```
 
 If your PostgreSQL password is not `root`, set `DATABASE_PASSWORD` before running the backend:
@@ -79,12 +82,17 @@ If your PostgreSQL password is not `root`, set `DATABASE_PASSWORD` before runnin
 $env:DATABASE_PASSWORD="your_postgres_password"
 ```
 
-## Run Backend
+## Run Python Backend
 
-From the project root:
+From the project root, create and activate a virtual environment:
 
 ```powershell
-.\mvnw.cmd spring-boot:run
+cd backend-python
+py -m venv .venv
+.\.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+Copy-Item .env.example .env
+uvicorn app.main:app --reload --port 8080
 ```
 
 Backend runs at:
@@ -98,7 +106,7 @@ http://localhost:8080
 Open a second terminal:
 
 ```powershell
-cd frontend-next
+cd frontend
 npm install
 npm run dev
 ```
@@ -144,7 +152,7 @@ Examples:
 
 ```text
 GET /api/contracts?page=0&size=10
-GET /api/contracts?status=REVIEW
+GET /api/contracts?status=UNDER_REVIEW
 GET /api/contracts?search=vendor
 ```
 
@@ -158,6 +166,18 @@ GET /api/contracts/{id}
 
 ```http
 GET /api/contracts/{id}/history
+```
+
+### Get Contract Report
+
+```http
+GET /api/contracts/{id}/report
+```
+
+### Generate Contract Report
+
+```http
+POST /api/contracts/{id}/report/regenerate
 ```
 
 ### Upload Contract
@@ -180,23 +200,41 @@ PUT /api/contracts/{id}/status
 Body:
 
 ```json
-{ "status": "REVIEW" }
+{ "status": "UNDER_REVIEW", "comment": "Submitted for admin review" }
 ```
 
-Valid status flow:
+Main status flow:
 
 ```text
-DRAFT -> REVIEW -> APPROVED
+UPLOADED -> UNDER_REVIEW -> APPROVED
+UPLOADED -> UNDER_REVIEW -> REJECTED
+UPLOADED -> UNDER_REVIEW -> NEEDS_CHANGES -> UNDER_REVIEW
+```
+
+Owners can submit or resubmit contracts:
+
+```http
+POST /api/contracts/{id}/submit-review
+```
+
+Admins can approve, reject, or request changes:
+
+```http
+POST /api/contracts/{id}/review
+```
+
+```json
+{ "status": "NEEDS_CHANGES", "comment": "Please upload the signed version." }
 ```
 
 ## Testing
 
-### Backend
+### Python Backend
 
-From the project root:
+From `backend-python/` with the virtual environment active:
 
 ```powershell
-.\mvnw.cmd test
+pytest
 ```
 
 Expected result:
@@ -207,7 +245,7 @@ BUILD SUCCESS
 
 ### Frontend
 
-From `frontend-next/`:
+From `frontend/`:
 
 ```powershell
 npm test
@@ -265,14 +303,10 @@ contract_chunk.embedding      bytea
 
 ### Upload fails with size errors
 
-Adjust these values in `src/main/resources/application.yaml`:
+Adjust these values in `backend-python/.env`:
 
-```yaml
-spring:
-  servlet:
-    multipart:
-      max-file-size: 10MB
-      max-request-size: 10MB
+```text
+DATABASE_URL=postgresql://postgres:root@localhost:5432/contract_management
 ```
 
 ## Assumptions Made During Development
@@ -280,8 +314,7 @@ spring:
 - PostgreSQL is available locally and the database is named `contract_management`.
 - Database setup is performed manually using `setup-database.sql`.
 - The backend uses environment variables for database overrides: `DATABASE_URL`, `DATABASE_USERNAME`, and `DATABASE_PASSWORD`.
-- The frontend communicates with the backend through `/api/contracts`; Next.js rewrites proxy these requests to the Spring Boot backend.
-- Valid contract statuses are `DRAFT`, `REVIEW`, and `APPROVED`.
-- Valid workflow transition order is `DRAFT -> REVIEW -> APPROVED`.
-- Authentication and authorization are outside the scope of this module.
+- The frontend communicates with the backend through `/api/contracts`; Next.js rewrites proxy these requests to the FastAPI backend.
+- Valid contract statuses are `UPLOADED`, `UNDER_REVIEW`, `NEEDS_CHANGES`, `APPROVED`, and `REJECTED`.
+- Authentication and role authorization are handled by the Python backend.
 - Uploaded files are stored locally in the `uploads/` directory.

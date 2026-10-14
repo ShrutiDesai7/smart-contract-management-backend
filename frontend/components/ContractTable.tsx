@@ -7,6 +7,7 @@ import { WorkflowProgress } from './WorkflowProgress'
 type ContractTableProps = {
   contracts: ContractListItem[]
   busyId: string | null
+  userRole?: 'USER' | 'ADMIN'
   onAdvanceStatus: (contract: ContractListItem) => void
 }
 
@@ -16,7 +17,9 @@ function formatDate(value: string | null): string {
   return Number.isNaN(date.getTime()) ? '-' : date.toLocaleDateString()
 }
 
-export function ContractTable({ contracts, busyId, onAdvanceStatus }: ContractTableProps) {
+export function ContractTable({ contracts, busyId, userRole, onAdvanceStatus }: ContractTableProps) {
+  const isAdmin = userRole === 'ADMIN'
+
   return (
     <div className="table-wrap">
       <table className="table">
@@ -37,7 +40,9 @@ export function ContractTable({ contracts, busyId, onAdvanceStatus }: ContractTa
                 <strong>{contract.title || `Contract #${contract.id}`}</strong>
                 {contract.description ? <div className="muted">{contract.description}</div> : null}
               </td>
-              <td>{contract.ownerName || '-'}</td>
+              <td>
+                <span style={{ fontWeight: 500 }}>{contract.ownerName || '-'}</span>
+              </td>
               <td>
                 <StatusBadge status={contract.status} />
               </td>
@@ -48,22 +53,24 @@ export function ContractTable({ contracts, busyId, onAdvanceStatus }: ContractTa
               <td>
                 <div className="row-actions">
                   <Link className="button secondary" href={`/contracts/${contract.id}`}>
-                    View
+                    {isAdmin ? 'Review / View' : 'View Details'}
                   </Link>
-                  {nextContractStatus(contract.status) ? (
-                    <button
-                      className="button secondary"
-                      type="button"
-                      disabled={busyId === contract.id}
-                      onClick={() => onAdvanceStatus(contract)}
-                    >
-                      {busyId === contract.id
-                        ? 'Updating...'
-                        : `Move to ${formatContractStatus(nextContractStatus(contract.status)!)}`}
-                    </button>
-                  ) : (
-                    <span className="muted action-note">Final status</span>
-                  )}
+                  {isAdmin ? (
+                    nextContractStatus(contract.status) ? (
+                      <button
+                        className="button secondary"
+                        type="button"
+                        disabled={busyId === contract.id}
+                        onClick={() => onAdvanceStatus(contract)}
+                      >
+                        {busyId === contract.id
+                          ? 'Updating...'
+                          : `Move to ${formatContractStatus(nextContractStatus(contract.status)!)}`}
+                      </button>
+                    ) : (
+                      <span className="muted action-note">Final status</span>
+                    )
+                  ) : null}
                 </div>
               </td>
             </tr>

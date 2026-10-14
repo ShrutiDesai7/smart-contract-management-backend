@@ -1,4 +1,11 @@
-export type ContractStatus = 'DRAFT' | 'REVIEW' | 'APPROVED'
+export type ContractStatus =
+  | 'UPLOADED'
+  | 'UNDER_REVIEW'
+  | 'NEEDS_CHANGES'
+  | 'APPROVED'
+  | 'REJECTED'
+  | 'DRAFT'
+  | 'REVIEW'
 
 export type PagedResponse<T> = {
   content: T[]
@@ -16,6 +23,7 @@ export type ContractListItem = {
   description: string | null
   status: ContractStatus
   ownerName: string | null
+  ownerId?: string | null
   createdAt: string | null
   updatedAt: string | null
 }
@@ -45,13 +53,53 @@ export type WorkflowHistoryItem = {
   previousStatus: ContractStatus | null
   newStatus: ContractStatus
   changedBy: string | null
+  comment?: string | null
   changedAt: string | null
+}
+
+export type ContractReport = {
+  id: string
+  contractId: string
+  summary: string
+  keyTerms: string[]
+  riskLevel: 'LOW' | 'MEDIUM' | 'HIGH'
+  riskPoints: string[]
+  importantDates: string[]
+  obligations: string[]
+  generatedBy: string
+  generatedAt: string | null
+}
+
+export type ContractQuestionAnswer = {
+  answer: string
+  evidence: string[]
+  generatedBy: string
+}
+
+export type User = {
+  id: string
+  name: string
+  email: string
+  role: 'USER' | 'ADMIN'
+  createdAt: string | null
+}
+
+export type AuthResponse = {
+  accessToken: string
+  tokenType: string
+  user: User
 }
 
 export function nextContractStatus(status: ContractStatus): ContractStatus | null {
   switch (status) {
+    case 'UPLOADED':
+    case 'NEEDS_CHANGES':
+    case 'REJECTED':
+      return 'UNDER_REVIEW'
+    case 'UNDER_REVIEW':
+      return 'APPROVED'
     case 'DRAFT':
-      return 'REVIEW'
+      return 'UNDER_REVIEW'
     case 'REVIEW':
       return 'APPROVED'
     case 'APPROVED':
@@ -61,11 +109,19 @@ export function nextContractStatus(status: ContractStatus): ContractStatus | nul
 
 export function formatContractStatus(status: ContractStatus): string {
   switch (status) {
+    case 'UPLOADED':
+      return 'Uploaded'
+    case 'UNDER_REVIEW':
+      return 'Under Review'
+    case 'NEEDS_CHANGES':
+      return 'Needs Changes'
     case 'DRAFT':
       return 'Draft'
     case 'REVIEW':
       return 'Review'
     case 'APPROVED':
       return 'Approved'
+    case 'REJECTED':
+      return 'Rejected'
   }
 }
