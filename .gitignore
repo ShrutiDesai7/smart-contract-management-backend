@@ -32,3 +32,9 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Python FastAPI backend ###
+backend-python/.venv/
+backend-python/__pycache__/
+backend-python/**/__pycache__/
+backend-python/.env

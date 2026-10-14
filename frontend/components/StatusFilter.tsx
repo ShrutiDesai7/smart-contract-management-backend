@@ -18,9 +18,11 @@ export function StatusFilter({ value, onChange }: StatusFilterProps) {
         onChange={(event) => onChange(event.target.value as ContractStatus | '')}
       >
         <option value="">All statuses</option>
-        <option value="DRAFT">Draft</option>
-        <option value="REVIEW">Review</option>
+        <option value="UPLOADED">Uploaded</option>
+        <option value="UNDER_REVIEW">Under Review</option>
+        <option value="NEEDS_CHANGES">Needs Changes</option>
         <option value="APPROVED">Approved</option>
+        <option value="REJECTED">Rejected</option>
       </select>
     </div>
   )
