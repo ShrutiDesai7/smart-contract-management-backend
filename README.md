@@ -1,109 +1,84 @@
-# Contract Management System
+﻿# Smart Contract Management System
 
-SaaS-style contract management module built with **Next.js**, **Python FastAPI**, and **PostgreSQL**. It lets users view, search, filter, paginate, upload, and inspect contracts with workflow history.
+This workspace contains a full-stack contract management application built with a Python FastAPI backend and a Next.js frontend.
 
-## Tech Stack
+## Project structure
 
-- **Frontend**: Next.js + TypeScript (`frontend/`)
-- **Backend**: Python 3.11+ + FastAPI (`backend-python/`)
-- **Database**: PostgreSQL
-- **Tests**: pytest/httpx for backend, Vitest + Testing Library for frontend
+- `backend-python/` — FastAPI REST API and business logic
+- `frontend/` — Next.js + React + TypeScript dashboard
+- `setup-database.sql` — PostgreSQL schema setup for the app
+- `add-users-table.sql`, `fix-contracts-schema.sql` — database repair/update scripts
+- `uploads/` — local uploaded contract files
+
+## Tech stack
+
+- Frontend: Next.js, React, TypeScript
+- Backend: Python 3.11+, FastAPI, SQLAlchemy, Pydantic
+- Database: PostgreSQL
+- Auth: bearer-token based auth with user/admin roles
+- File handling: uploaded contract documents and encrypted storage
 
 ## Features
 
-- Contracts dashboard
-  - Contract title
-  - Owner
-  - Status
-  - Created date
-  - Search box
-  - Status filter
-  - Pagination
-  - Loading, error, and empty states
-- Contract details page
-  - Contract metadata
-  - Workflow history
-- REST APIs
-  - `GET /api/contracts`
-  - `GET /api/contracts/{id}`
-  - `GET /api/contracts/{id}/history`
-- PostgreSQL database schema
-  - `contracts`
-  - `workflow_history`
-  - `contract_chunk`
-  - Primary keys, foreign keys, and indexes
-- Optional upload and Q&A support
-  - `POST /api/contracts/upload`
-  - `POST /api/contracts/{id}/ask`
-- LLM-ready reports
-  - `GET /api/contracts/{id}/report`
-  - `POST /api/contracts/{id}/report/regenerate`
-- Authenticated user/admin workflow
-  - Users can access their own contracts
-  - Admins can review all contracts
-  - Admins can approve, reject, or request changes
-
-Legacy `/contracts` endpoints are also supported for backward compatibility, but the assessment/frontend APIs use `/api/contracts`.
+- Contract listing, search, filtering, and pagination
+- Contract detail and workflow history views
+- Contract upload and document processing
+- User/admin approval workflow
+- Contract status tracking (`UPLOADED`, `UNDER_REVIEW`, `NEEDS_CHANGES`, `APPROVED`, `REJECTED`)
+- Report generation with optional OpenAI-backed support and a local fallback
 
 ## Prerequisites
 
 - Python 3.11+
 - Node.js 18+ or 20+
 - PostgreSQL 12+
-- PowerShell on Windows
+- PowerShell on Windows (or another shell that can run the same commands)
 
-## PostgreSQL Setup
+## Database setup
 
-Start PostgreSQL first. Then run the setup script from the project root.
-
-If `psql` works from PowerShell:
+Start PostgreSQL locally, then run the setup script from the project root:
 
 ```powershell
 psql -U postgres -f setup-database.sql
 ```
 
-If `psql` is not recognized, use the full PostgreSQL path:
+If `psql` is not recognized, use the PostgreSQL binary directly:
 
 ```powershell
 & "C:\Program Files\PostgreSQL\16\bin\psql.exe" -U postgres -f setup-database.sql
 ```
 
-The script creates the `contract_management` database and required tables. If you see messages like `already exists` or `relation already exists, skipping`, that is fine.
+The script creates the `contract_management` database and required tables. If you see messages such as `already exists`, that is fine.
 
-The Python backend uses these defaults from `backend-python/.env.example`:
-
-```yaml
-DATABASE_URL=postgresql://postgres:root@localhost:5432/contract_management
-```
-
-If your PostgreSQL password is not `root`, set `DATABASE_PASSWORD` before running the backend:
+Then copy the environment file for the backend:
 
 ```powershell
-$env:DATABASE_PASSWORD="your_postgres_password"
+cd backend-python
+Copy-Item .env.example .env
 ```
 
-## Run Python Backend
+If your PostgreSQL password is not `root`, update `backend-python/.env` before starting the API.
 
-From the project root, create and activate a virtual environment:
+## Run the backend
+
+From the project root:
 
 ```powershell
 cd backend-python
 py -m venv .venv
 .\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
-Copy-Item .env.example .env
 uvicorn app.main:app --reload --port 8080
 ```
 
-Backend runs at:
+The API will run at:
 
-```text
-http://localhost:8080
-```
+- http://localhost:8080
+- API docs: http://localhost:8080/docs
 
-## Run Frontend
+## Run the frontend
 
-Open a second terminal:
+Open a second terminal and run:
 
 ```powershell
 cd frontend
@@ -111,210 +86,74 @@ npm install
 npm run dev
 ```
 
-Frontend runs at:
+The frontend will run at:
 
-```text
-http://localhost:3000
-```
+- http://localhost:3000
 
-Open `http://localhost:3000` in your browser.
+## Main API endpoints
 
-## ScreenShots
+### Authentication
 
-## Dashboard
-<img width="1223" height="878" alt="image" src="https://github.com/user-attachments/assets/5dcfc400-1790-4809-afdf-5a269e502a5b" />
+- `POST /api/auth/register`
+- `POST /api/auth/login`
+- `GET /api/auth/me`
 
----
-## View
-<img width="1221" height="808" alt="image" src="https://github.com/user-attachments/assets/d52dcdae-81d7-4ac0-b2c4-9bbdd4d67641" />
+### Contracts
 
----
-## Search
-<img width="1152" height="377" alt="image" src="https://github.com/user-attachments/assets/170587b0-7b97-4870-b7a9-004b48c1de63" />
+- `GET /api/contracts`
+- `GET /api/contracts/{id}`
+- `GET /api/contracts/{id}/history`
+- `POST /api/contracts/upload`
+- `PUT /api/contracts/{id}/status`
+- `POST /api/contracts/{id}/submit-review`
+- `POST /api/contracts/{id}/review`
+- `GET /api/contracts/{id}/report`
+- `POST /api/contracts/{id}/report/regenerate`
 
----
-## API Reference
+The first registered user becomes the admin account. Later users are treated as regular users.
 
-### List Contracts
+## Useful notes
 
-```http
-GET /api/contracts
-```
-
-Supports:
-
-- `page`
-- `size`
-- `search`
-- `status`
-
-Examples:
-
-```text
-GET /api/contracts?page=0&size=10
-GET /api/contracts?status=UNDER_REVIEW
-GET /api/contracts?search=vendor
-```
-
-### Get Contract Details
-
-```http
-GET /api/contracts/{id}
-```
-
-### Get Workflow History
-
-```http
-GET /api/contracts/{id}/history
-```
-
-### Get Contract Report
-
-```http
-GET /api/contracts/{id}/report
-```
-
-### Generate Contract Report
-
-```http
-POST /api/contracts/{id}/report/regenerate
-```
-
-### Upload Contract
-
-```http
-POST /api/contracts/upload
-```
-
-Multipart fields:
-
-- `contractName`
-- `file`
-
-### Update Contract Status
-
-```http
-PUT /api/contracts/{id}/status
-```
-
-Body:
-
-```json
-{ "status": "UNDER_REVIEW", "comment": "Submitted for admin review" }
-```
-
-Main status flow:
-
-```text
-UPLOADED -> UNDER_REVIEW -> APPROVED
-UPLOADED -> UNDER_REVIEW -> REJECTED
-UPLOADED -> UNDER_REVIEW -> NEEDS_CHANGES -> UNDER_REVIEW
-```
-
-Owners can submit or resubmit contracts:
-
-```http
-POST /api/contracts/{id}/submit-review
-```
-
-Admins can approve, reject, or request changes:
-
-```http
-POST /api/contracts/{id}/review
-```
-
-```json
-{ "status": "NEEDS_CHANGES", "comment": "Please upload the signed version." }
-```
+- The `.env` file in `backend-python/` is used for database and optional OpenAI settings.
+- `OPENAI_API_KEY` is optional. If it is not set, the backend uses a deterministic local fallback for report generation.
+- Uploaded files are stored in the local `uploads/` directory and are encrypted at rest.
+- If `psql` is not available in PATH, add PostgreSQL's `bin` folder to PATH or call the full executable path.
 
 ## Testing
 
-### Python Backend
-
-From `backend-python/` with the virtual environment active:
+### Backend
 
 ```powershell
+cd backend-python
+.\.venv\Scripts\Activate.ps1
 pytest
-```
-
-Expected result:
-
-```text
-BUILD SUCCESS
 ```
 
 ### Frontend
 
-From `frontend/`:
-
 ```powershell
+cd frontend
 npm test
 npm run lint
 npm run build
 ```
 
-## Database Troubleshooting
+## Troubleshooting
 
-### `psql` is not recognized
-
-Use the full path:
+### `psql` not recognized
 
 ```powershell
 & "C:\Program Files\PostgreSQL\16\bin\psql.exe" -U postgres -d contract_management
 ```
 
-Or add this folder to Windows PATH:
+### Database password mismatch
+
+If PostgreSQL is set to a password other than `root`, update `backend-python/.env`:
 
 ```text
-C:\Program Files\PostgreSQL\16\bin
+DATABASE_URL=postgresql://postgres:your_password@localhost:5432/contract_management
 ```
 
-### Old schema causes UUID/BIGINT errors
+### Old schema errors
 
-If you see errors like:
-
-```text
-operator does not exist: uuid = bigint
-```
-
-your existing PostgreSQL tables were created with older column types. Recreate the affected tables:
-
-```powershell
-& "C:\Program Files\PostgreSQL\16\bin\psql.exe" -U postgres -d contract_management -c "DROP TABLE IF EXISTS contract_chunk;"
-& "C:\Program Files\PostgreSQL\16\bin\psql.exe" -U postgres -d contract_management -c "DROP TABLE IF EXISTS workflow_history;"
-& "C:\Program Files\PostgreSQL\16\bin\psql.exe" -U postgres -f setup-database.sql
-```
-
-Verify column types:
-
-```powershell
-& "C:\Program Files\PostgreSQL\16\bin\psql.exe" -U postgres -d contract_management -c "SELECT table_name, column_name, data_type FROM information_schema.columns WHERE table_name IN ('contracts', 'workflow_history', 'contract_chunk') ORDER BY table_name, ordinal_position;"
-```
-
-Important expected types:
-
-```text
-contracts.id                  uuid
-workflow_history.id           uuid
-workflow_history.contract_id  uuid
-contract_chunk.contract_id    uuid
-contract_chunk.embedding      bytea
-```
-
-### Upload fails with size errors
-
-Adjust these values in `backend-python/.env`:
-
-```text
-DATABASE_URL=postgresql://postgres:root@localhost:5432/contract_management
-```
-
-## Assumptions Made During Development
-
-- PostgreSQL is available locally and the database is named `contract_management`.
-- Database setup is performed manually using `setup-database.sql`.
-- The backend uses environment variables for database overrides: `DATABASE_URL`, `DATABASE_USERNAME`, and `DATABASE_PASSWORD`.
-- The frontend communicates with the backend through `/api/contracts`; Next.js rewrites proxy these requests to the FastAPI backend.
-- Valid contract statuses are `UPLOADED`, `UNDER_REVIEW`, `NEEDS_CHANGES`, `APPROVED`, and `REJECTED`.
-- Authentication and role authorization are handled by the Python backend.
-- Uploaded files are stored locally in the `uploads/` directory.
+If the database was created with older schema versions, rerun the root SQL setup scripts to rebuild the required tables and indexes.
